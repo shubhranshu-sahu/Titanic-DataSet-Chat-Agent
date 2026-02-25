@@ -4,7 +4,7 @@ import base64
 import time
 
 # Config
-BACKEND_URL = "http://127.0.0.1:8000/chat"
+BACKEND_URL = "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat"
 
 st.set_page_config(page_title="Titanic Data Chat Agent", layout="centered")
 
