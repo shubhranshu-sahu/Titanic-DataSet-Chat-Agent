@@ -103,7 +103,7 @@ Rules:
 def run_agent(user_input: str):
     global LAST_IMAGE
 
-    LAST_IMAGE = None  # reset
+    LAST_IMAGE = None
 
     result = agent.invoke(
         {
@@ -113,19 +113,32 @@ def run_agent(user_input: str):
         }
     )
 
-    final_text = ""
+    final_text = None
+    tool_text = None
 
     for msg in result["messages"]:
+
+        # AI message
         if msg.type == "ai":
             if isinstance(msg.content, list):
-                # Extract only text blocks
                 texts = []
                 for block in msg.content:
                     if isinstance(block, dict) and block.get("type") == "text":
                         texts.append(block.get("text", ""))
-                final_text = "\n".join(texts)
-            else:
-                final_text = str(msg.content)
+                combined = "\n".join(texts).strip()
+                if combined:
+                    final_text = combined
+            elif isinstance(msg.content, str) and msg.content.strip():
+                final_text = msg.content.strip()
+
+        # Tool message
+        if msg.type == "tool":
+            if isinstance(msg.content, str) and msg.content.strip():
+                tool_text = msg.content.strip()
+
+    # Fallback logic
+    if not final_text:
+        final_text = tool_text or "Analysis completed."
 
     return {
         "text": final_text,

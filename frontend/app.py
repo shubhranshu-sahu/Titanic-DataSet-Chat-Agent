@@ -3,9 +3,7 @@ import requests
 import base64
 import time
 
-# =============================
 # Config
-# =============================
 BACKEND_URL = "http://127.0.0.1:8000/chat"
 
 st.set_page_config(page_title="Titanic Data Chat Agent", layout="centered")
@@ -13,18 +11,14 @@ st.set_page_config(page_title="Titanic Data Chat Agent", layout="centered")
 st.title("🚢 Titanic Data Chat Agent")
 st.markdown("Ask questions about the Titanic dataset and get insights + visualizations.")
 
-# =============================
 # Session State
-# =============================
 if "session_id" not in st.session_state:
     st.session_state.session_id = None
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# =============================
-# Sidebar (Nice UX Addition)
-# =============================
+# Sidebar 
 with st.sidebar:
     st.header("Sample Questions")
     st.markdown("""
@@ -39,9 +33,9 @@ with st.sidebar:
         st.session_state.session_id = None
         st.rerun()
 
-# =============================
+# 
 # Display Chat History
-# =============================
+
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -49,9 +43,7 @@ for msg in st.session_state.messages:
             image_bytes = base64.b64decode(msg["image"])
             st.image(image_bytes, use_container_width=True)
 
-# =============================
 # User Input
-# =============================
 user_input = st.chat_input("Ask about Titanic dataset...")
 
 if user_input:
