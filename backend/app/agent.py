@@ -117,7 +117,15 @@ def run_agent(user_input: str):
 
     for msg in result["messages"]:
         if msg.type == "ai":
-            final_text = msg.content
+            if isinstance(msg.content, list):
+                # Extract only text blocks
+                texts = []
+                for block in msg.content:
+                    if isinstance(block, dict) and block.get("type") == "text":
+                        texts.append(block.get("text", ""))
+                final_text = "\n".join(texts)
+            else:
+                final_text = str(msg.content)
 
     return {
         "text": final_text,

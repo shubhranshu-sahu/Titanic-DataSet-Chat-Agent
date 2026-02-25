@@ -19,7 +19,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "Backend running 🚀"}
+    return {"status": "Backend running"}
 
 
 @app.post("/chat")
