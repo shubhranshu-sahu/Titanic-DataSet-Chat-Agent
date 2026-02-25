@@ -56,21 +56,42 @@ sys.stdout = stdout_buffer
 
 
        # Capture all open figures
-        figures = [plt.figure(n) for n in plt.get_fignums()]
+        # figures = [plt.figure(n) for n in plt.get_fignums()]
 
-        for fig in figures:
+        # for fig in figures:
+        #     buf = io.BytesIO()
+        #     fig.savefig(buf, format="png")
+        #     buf.seek(0)
+        #     image_base64 = base64.b64encode(buf.read()).decode("utf-8")
+        #     LAST_IMAGES.append(image_base64)
+        #     buf.close()
+
+        # plt.close("all")
+
+        # figures = plt.get_fignums()
+        
+        
+         # Capture ONLY the most recent figure (prevents duplicates)
+        fig_nums = plt.get_fignums()
+
+        for num in fig_nums:
+            fig = plt.figure(num)
+
             buf = io.BytesIO()
             fig.savefig(buf, format="png")
             buf.seek(0)
+
             image_base64 = base64.b64encode(buf.read()).decode("utf-8")
-            LAST_IMAGES.append(image_base64)
+
+            # Avoid duplicate append
+            if image_base64 not in LAST_IMAGES:
+                LAST_IMAGES.append(image_base64)
+
             buf.close()
 
         plt.close("all")
 
-        figures = plt.get_fignums()
-
-        if not output_text and not figures:
+        if not output_text and not fig_nums:
             return "ERROR: No result was printed."
         
 
@@ -127,64 +148,38 @@ Be concise when possible, but detailed when explanation is required.
 def run_agent(message_history):
     global LAST_IMAGES
 
+    # Reset images per request
     LAST_IMAGES = []
-    result = agent.invoke(
-        {
-        "messages": message_history
-    }
-    )
+
+    # Invoke agent with structured history
+    result = agent.invoke({"messages": message_history})
+    messages = result.get("messages", [])
 
     final_text = None
-    tool_text = None
 
-    for msg in result["messages"]:
-
-        # AI message
+    #  Extract ONLY the LAST AI message (fixes repetition bug)
+    for msg in reversed(messages):
         if msg.type == "ai":
-            if isinstance(msg.content, list):
-                texts = []
-                for block in msg.content:
-                    if isinstance(block, dict) and block.get("type") == "text":
-                        texts.append(block.get("text", ""))
-                combined = "\n".join(texts).strip()
-                if combined:
-                    final_text = combined
-            elif isinstance(msg.content, str) and msg.content.strip():
-                final_text = msg.content.strip()
+            content = msg.content
 
-        # Tool message
-        if msg.type == "tool":
-            if isinstance(msg.content, str) and msg.content.strip():
-                tool_text = msg.content.strip()
+            if isinstance(content, list):
+                texts = [
+                    block.get("text", "")
+                    for block in content
+                    if isinstance(block, dict) and block.get("type") == "text"
+                ]
+                final_text = "\n".join(texts).strip()
+            else:
+                final_text = str(content).strip()
 
-        #  Enforcement Layer
-    if not final_text or len(final_text) < 30:
-        # Ask model to summarize tool result properly
-        summary_prompt = message_history + [
-            HumanMessage(
-                content="Provide a clear explanation of the result above. "
-                        "Explain what was computed, key insights, and interpret the outcome."
-            )
-        ]
+            break  # stop at newest AI message
 
-        summary_result = agent.invoke({"messages": summary_prompt})
-
-        for msg in summary_result["messages"]:
-            if msg.type == "ai" and msg.content:
-                if isinstance(msg.content, list):
-                    texts = [
-                        block.get("text", "")
-                        for block in msg.content
-                        if isinstance(block, dict) and block.get("type") == "text"
-                    ]
-                    final_text = "\n".join(texts).strip()
-                else:
-                    final_text = msg.content.strip()
-
-    # Absolute fallback (only if truly broken)
+    # Safety fallback (rare)
     if not final_text:
-        final_text = "I encountered an issue while generating the explanation. Please try rephrasing your question."
-
+        final_text = (
+            "I encountered an issue while generating the explanation. "
+            "Please try rephrasing your question."
+        )
 
     return {
         "text": final_text,
