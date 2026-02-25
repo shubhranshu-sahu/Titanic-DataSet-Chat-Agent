@@ -4,7 +4,8 @@ import base64
 import time
 
 # Config
-BACKEND_URL = "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat"
+# BACKEND_URL = "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat"
+BACKEND_URL = "http://127.0.0.1:8000/chat"
 
 st.set_page_config(page_title="Titanic Data Chat Agent", layout="centered")
 
@@ -39,9 +40,10 @@ with st.sidebar:
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
-        if msg.get("image"):
-            image_bytes = base64.b64decode(msg["image"])
-            st.image(image_bytes, use_container_width=True)
+
+        if msg.get("images"):
+            for img in msg["images"]:
+                st.image(base64.b64decode(img), use_container_width=True)
 
 # User Input
 user_input = st.chat_input("Ask about Titanic dataset...")
@@ -70,8 +72,8 @@ if user_input:
         if not st.session_state.session_id:
             st.session_state.session_id = data.get("session_id")
 
-        bot_text = data.get("response", "")
-        bot_image = data.get("image")
+        bot_text = data.get("response") or "I couldn't generate a response. Please try rephrasing."
+        bot_images = data.get("images", [])
 
         # Show assistant message with streaming effect
         with st.chat_message("assistant"):
@@ -83,15 +85,16 @@ if user_input:
                 placeholder.markdown(streamed_text)
                 time.sleep(0.01)
 
-            if bot_image:
-                image_bytes = base64.b64decode(bot_image)
-                st.image(image_bytes, use_container_width=True)
+            if bot_images:
+                for img in bot_images:
+                    image_bytes = base64.b64decode(img)
+                    st.image(image_bytes, use_container_width=True)
 
         # Store assistant message
         st.session_state.messages.append({
             "role": "assistant",
             "content": bot_text,
-            "image": bot_image
+            "images": bot_images
         })
 
     except Exception as e:

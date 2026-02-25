@@ -22,9 +22,11 @@ def health_check():
     return {"status": "Backend running"}
 
 
+
 @app.post("/chat")
 def chat(request: ChatRequest):
     try:
+        # Create session if needed
         if not request.session_id:
             request.session_id = str(uuid4())
 
@@ -33,25 +35,19 @@ def chat(request: ChatRequest):
 
         history = chat_sessions[request.session_id]
 
-        # Build conversation context
-        context_text = ""
-        for msg in history:
-            context_text += f"User: {msg['user']}\n"
-            context_text += f"Assistant: {msg['assistant']}\n"
+        # Append new user message
+        history.append(HumanMessage(content=request.message))
 
-        full_input = context_text + f"User: {request.message}"
+        # Run agent with full structured history
+        result = run_agent(history)
 
-        result = run_agent(full_input)
-
-        history.append({
-            "user": request.message,
-            "assistant": result["text"]
-        })
+        # Append assistant response to history
+        history.append(AIMessage(content=result["text"]))
 
         return {
             "session_id": request.session_id,
             "response": result["text"],
-            "image": result["image"]
+            "images": result["images"]
         }
 
     except Exception as e:
