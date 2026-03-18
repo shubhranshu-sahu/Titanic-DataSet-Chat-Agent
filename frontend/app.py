@@ -9,14 +9,13 @@ BACKEND_URL = "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat"
 
 BACKEND_URLS = [
     "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat",
-    "https://titanic-dataset-chat-agent-tooh.onrender.com/chat",
-    "http://127.0.0.1:8000/chat"
+    "https://titanic-dataset-chat-agent-tooh.onrender.com/chat"
 ]
 
 def get_working_backend():
     for url in BACKEND_URLS:
         try:
-            response = requests.get(url.replace("/chat", "/"))  # basic health check
+            response = requests.get(url.replace("/chat", "/health"))  # basic health check
             if response.status_code == 200:
                 return url
         except:
