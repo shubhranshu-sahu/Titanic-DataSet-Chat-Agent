@@ -7,6 +7,27 @@ import time
 BACKEND_URL = "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat"
 # BACKEND_URL = "http://127.0.0.1:8000/chat"
 
+BACKEND_URLS = [
+    "https://titanic-dataset-chat-agent-jfxj.onrender.com/chat",
+    "https://titanic-dataset-chat-agent-tooh.onrender.com/chat",
+    "http://127.0.0.1:8000/chat"
+]
+
+def get_working_backend():
+    for url in BACKEND_URLS:
+        try:
+            response = requests.get(url.replace("/chat", "/"))  # basic health check
+            if response.status_code == 200:
+                return url
+        except:
+            continue
+    return None
+
+if "backend_url" not in st.session_state:
+    st.session_state.backend_url = get_working_backend()
+
+BACKEND_URL = st.session_state.backend_url # selecting the working one from alternates
+
 st.set_page_config(page_title="Titanic Data Chat Agent", layout="centered")
 
 st.title("🚢 Titanic Data Chat Agent")
